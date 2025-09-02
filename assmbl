@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# Default values
+OUTPUT="a.out"
+RUN_AFTER=false
+CLEAN=false
+
+usage() {
+  echo "Usage: $0 -i <input.asm> [-o <output>] [-r] [-rm]"
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -i) INPUT="$2"; shift 2 ;;
+    -o) OUTPUT="$2"; shift 2 ;;
+    -r) RUN_AFTER=true; shift ;;
+    -rm) CLEAN=true; shift ;;
+    *) usage ;;
+  esac
+done
+
+if [ -z "$INPUT" ]; then
+  usage
+fi
+
+OBJ="${INPUT%.asm}.o"
+
+# Assemble
+nasm -f elf64 "$INPUT" -o "$OBJ" || exit 1
+
+# Link
+gcc -nostartfiles -no-pie "$OBJ" -o "$OUTPUT" || exit 1
+
+echo "Built $OUTPUT"
+
+# Run immediately
+if $RUN_AFTER; then
+  echo "Running $OUTPUT..."
+  ./"$OUTPUT"
+fi
+
+if $CLEAN; then
+    echo ""
+fi
+# Clean up
+if $CLEAN; then
+  echo "Removing $OBJ and $OUTPUT"
+  rm -f "$OBJ" "$OUTPUT"
+fi
