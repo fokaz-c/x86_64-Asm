@@ -2,8 +2,6 @@
 ; @brief  Macros library for I/O operations
 ; @author fokaz-c
 
-%include "macros/math.inc"
-
 ; Print data to stdout
 ; @param %1 - buffer address
 ; @param %2 - number of bytes to print

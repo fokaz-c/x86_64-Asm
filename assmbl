@@ -4,9 +4,15 @@
 OUTPUT="a.out"
 RUN_AFTER=false
 CLEAN=false
+USE_C_LIB=false
 
 usage() {
-  echo "Usage: $0 -i <input.asm> [-o <output>] [-r] [-rm]"
+  echo "Usage: $0 -i <input.asm> [-o <output>] [-r] [-rm] [-c]"
+  echo "  -i   input file"
+  echo "  -o   output file name (default: a.out)"
+  echo "  -r   run the program after building"
+  echo "  -rm  remove generated files after running"
+  echo "  -c   link against the C standard library (for puts, printf, etc.)"
   exit 1
 }
 
@@ -16,6 +22,7 @@ while [[ $# -gt 0 ]]; do
     -o) OUTPUT="$2"; shift 2 ;;
     -r) RUN_AFTER=true; shift ;;
     -rm) CLEAN=true; shift ;;
+    -c) USE_C_LIB=true; shift ;;
     *) usage ;;
   esac
 done
@@ -30,7 +37,13 @@ OBJ="${INPUT%.asm}.o"
 nasm -f elf64 "$INPUT" -o "$OBJ" || exit 1
 
 # Link
-gcc -nostartfiles -no-pie "$OBJ" -o "$OUTPUT" || exit 1
+if $USE_C_LIB; then
+  # Link using GCC with C library
+  gcc -no-pie "$OBJ" -o "$OUTPUT" || exit 1
+else
+  # Barebones (no libc)
+  ld "$OBJ" -o "$OUTPUT" || exit 1
+fi
 
 echo "Built $OUTPUT"
 
@@ -40,11 +53,9 @@ if $RUN_AFTER; then
   ./"$OUTPUT"
 fi
 
-if $CLEAN; then
-    echo ""
-fi
 # Clean up
 if $CLEAN; then
   echo "Removing $OBJ and $OUTPUT"
   rm -f "$OBJ" "$OUTPUT"
 fi
+
